@@ -322,25 +322,29 @@ const MiningResourcesMap = () => {
   const uniqueResources = [...new Set(miningData.map(d => d.resource))];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+      <div className="bg-white/10 backdrop-blur-xl border-b border-white/20 shadow-2xl">
+        <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Pickaxe className="h-8 w-8 text-blue-600" />
+            <div className="flex items-center space-x-4">
+              <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg">
+                <Pickaxe className="h-8 w-8 text-white" />
+              </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Global Mining Resources</h1>
-                <p className="text-sm text-gray-600">Interactive map of worldwide mineral deposits</p>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
+                  Global Mining Resources
+                </h1>
+                <p className="text-sm text-gray-300 mt-1">Interactive map of worldwide mineral deposits</p>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <Badge variant="secondary" className="text-sm">
-                {filteredData.length} Deposits
-              </Badge>
+            <div className="flex items-center space-x-3">
+              <div className="px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
+                <span className="text-white font-medium">{filteredData.length} Deposits</span>
+              </div>
               <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button className="bg-blue-600 hover:bg-blue-700">
+                  <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
                     <Plus className="h-4 w-4 mr-2" />
                     Add Deposit
                   </Button>
@@ -351,20 +355,20 @@ const MiningResourcesMap = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Filters and Search */}
-          <div className="lg:col-span-1 space-y-4">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center">
-                  <Filter className="h-4 w-4 mr-2" />
+          <div className="lg:col-span-1 space-y-6">
+            <Card className="bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg flex items-center text-white">
+                  <Filter className="h-4 w-4 mr-2 text-blue-400" />
                   Filters
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="search">Search</Label>
+                  <Label htmlFor="search" className="text-gray-300 font-medium">Search</Label>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
@@ -372,21 +376,21 @@ const MiningResourcesMap = () => {
                       placeholder="Company, project, or country..."
                       value={searchTerm}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-                      className="pl-9"
+                      className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:bg-white/20 focus:border-blue-400"
                     />
                   </div>
                 </div>
                 
                 <div>
-                  <Label htmlFor="resource-filter">Resource Type</Label>
+                  <Label htmlFor="resource-filter" className="text-gray-300 font-medium">Resource Type</Label>
                   <Select value={resourceFilter} onValueChange={setResourceFilter}>
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-white/10 border-white/20 text-white focus:bg-white/20 focus:border-blue-400">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Resources</SelectItem>
+                    <SelectContent className="bg-slate-800 border-white/20">
+                      <SelectItem value="all" className="text-white hover:bg-slate-700">All Resources</SelectItem>
                       {uniqueResources.map(resource => (
-                        <SelectItem key={resource} value={resource}>
+                        <SelectItem key={resource} value={resource} className="text-white hover:bg-slate-700">
                           <div className="flex items-center">
                             <div 
                               className="w-3 h-3 rounded-full mr-2"
@@ -404,15 +408,16 @@ const MiningResourcesMap = () => {
 
             {/* Selected Deposit Details */}
             {selectedDeposit && (
-              <Card>
-                <CardHeader className="pb-3">
+              <Card className="bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl">
+                <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">Deposit Details</CardTitle>
+                    <CardTitle className="text-lg text-white">Deposit Details</CardTitle>
                     <div className="flex space-x-2">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => openEditDialog(selectedDeposit)}
+                        className="border-white/20 text-white hover:bg-white/10"
                       >
                         <Edit3 className="h-3 w-3 mr-1" />
                         Edit
@@ -421,7 +426,7 @@ const MiningResourcesMap = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => handleDeleteDeposit(selectedDeposit.id)}
-                        className="text-red-600 hover:text-red-700"
+                        className="border-red-500/50 text-red-400 hover:bg-red-500/10"
                       >
                         <Trash2 className="h-3 w-3 mr-1" />
                         Delete
@@ -429,36 +434,36 @@ const MiningResourcesMap = () => {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="space-y-4">
                   <div>
-                    <Label className="text-sm font-medium text-gray-600">Company</Label>
-                    <p className="text-sm">{selectedDeposit.companyName}</p>
+                    <Label className="text-sm font-medium text-gray-300">Company</Label>
+                    <p className="text-sm text-white">{selectedDeposit.companyName}</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-600">Project</Label>
-                    <p className="text-sm font-semibold">{selectedDeposit.projectName}</p>
+                    <Label className="text-sm font-medium text-gray-300">Project</Label>
+                    <p className="text-sm font-semibold text-white">{selectedDeposit.projectName}</p>
                   </div>
                   <div className="flex items-center space-x-2">
                     <div 
                       className="w-3 h-3 rounded-full"
                       style={{ backgroundColor: resourceColors[selectedDeposit.resource] || '#666' }}
                     />
-                    <span className="text-sm">{selectedDeposit.resource}</span>
-                    <Badge variant={selectedDeposit.status === 'Active' ? 'default' : 'secondary'} className="text-xs">
+                    <span className="text-sm text-white">{selectedDeposit.resource}</span>
+                    <Badge variant={selectedDeposit.status === 'Active' ? 'default' : 'secondary'} className="text-xs bg-gradient-to-r from-green-500 to-emerald-500 text-white">
                       {selectedDeposit.status}
                     </Badge>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-600">Location</Label>
-                    <p className="text-sm">{selectedDeposit.country}</p>
-                    <p className="text-xs text-gray-500">
+                    <Label className="text-sm font-medium text-gray-300">Location</Label>
+                    <p className="text-sm text-white">{selectedDeposit.country}</p>
+                    <p className="text-xs text-gray-400">
                       {selectedDeposit.latitude.toFixed(4)}, {selectedDeposit.longitude.toFixed(4)}
                     </p>
                   </div>
                   {selectedDeposit.description && (
                     <div>
-                      <Label className="text-sm font-medium text-gray-600">Description</Label>
-                      <p className="text-sm">{selectedDeposit.description}</p>
+                      <Label className="text-sm font-medium text-gray-300">Description</Label>
+                      <p className="text-sm text-white">{selectedDeposit.description}</p>
                     </div>
                   )}
                 </CardContent>
@@ -468,25 +473,25 @@ const MiningResourcesMap = () => {
 
           {/* Main Map Area */}
           <div className="lg:col-span-3">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center">
-                  <MapPin className="h-4 w-4 mr-2" />
+            <Card className="bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center text-white">
+                  <MapPin className="h-4 w-4 mr-2 text-blue-400" />
                   World Mining Deposits Map
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-gray-300">
                   Click on markers to view deposit details
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div 
                   ref={mapRef}
-                  className="relative w-full h-96 bg-gradient-to-b from-blue-200 to-blue-300 rounded-lg overflow-hidden border"
+                  className="relative w-full h-96 rounded-xl overflow-hidden border border-white/20"
                   style={{
                     backgroundImage: `
-                      radial-gradient(circle at 20% 20%, rgba(255,255,255,0.3) 0%, transparent 50%),
-                      radial-gradient(circle at 80% 80%, rgba(255,255,255,0.2) 0%, transparent 50%),
-                      linear-gradient(to bottom, #87CEEB 0%, #4682B4 100%)
+                      radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.3) 0%, transparent 50%),
+                      radial-gradient(circle at 80% 80%, rgba(147, 51, 234, 0.2) 0%, transparent 50%),
+                      linear-gradient(135deg, #1e293b 0%, #334155 25%, #475569 50%, #64748b 75%, #94a3b8 100%)
                     `
                   }}
                 >
@@ -495,48 +500,48 @@ const MiningResourcesMap = () => {
                     {/* North America */}
                     <path
                       d="M 100 80 Q 150 60 200 80 Q 250 70 280 90 Q 300 120 280 150 Q 250 180 200 170 Q 150 160 120 180 Q 80 150 100 80"
-                      fill="rgba(34, 197, 94, 0.6)"
-                      stroke="rgba(34, 197, 94, 0.8)"
+                      fill="rgba(59, 130, 246, 0.3)"
+                      stroke="rgba(59, 130, 246, 0.6)"
                       strokeWidth="1"
                     />
                     
                     {/* South America */}
                     <path
                       d="M 180 200 Q 220 190 240 220 Q 250 260 240 300 Q 220 340 200 360 Q 180 340 170 300 Q 160 260 180 200"
-                      fill="rgba(34, 197, 94, 0.6)"
-                      stroke="rgba(34, 197, 94, 0.8)"
+                      fill="rgba(147, 51, 234, 0.3)"
+                      stroke="rgba(147, 51, 234, 0.6)"
                       strokeWidth="1"
                     />
                     
                     {/* Africa */}
                     <path
                       d="M 380 140 Q 420 130 450 160 Q 460 200 450 240 Q 440 280 420 300 Q 380 310 360 280 Q 350 240 360 200 Q 370 160 380 140"
-                      fill="rgba(34, 197, 94, 0.6)"
-                      stroke="rgba(34, 197, 94, 0.8)"
+                      fill="rgba(34, 197, 94, 0.3)"
+                      stroke="rgba(34, 197, 94, 0.6)"
                       strokeWidth="1"
                     />
                     
                     {/* Europe */}
                     <path
                       d="M 380 60 Q 420 50 450 70 Q 460 90 450 110 Q 420 120 380 110 Q 360 90 380 60"
-                      fill="rgba(34, 197, 94, 0.6)"
-                      stroke="rgba(34, 197, 94, 0.8)"
+                      fill="rgba(239, 68, 68, 0.3)"
+                      stroke="rgba(239, 68, 68, 0.6)"
                       strokeWidth="1"
                     />
                     
                     {/* Asia */}
                     <path
                       d="M 480 60 Q 580 50 650 80 Q 700 100 720 140 Q 710 180 680 200 Q 620 210 580 190 Q 520 180 480 160 Q 460 120 480 60"
-                      fill="rgba(34, 197, 94, 0.6)"
-                      stroke="rgba(34, 197, 94, 0.8)"
+                      fill="rgba(245, 158, 11, 0.3)"
+                      stroke="rgba(245, 158, 11, 0.6)"
                       strokeWidth="1"
                     />
                     
                     {/* Australia */}
                     <path
                       d="M 600 280 Q 650 270 680 290 Q 690 310 680 330 Q 650 340 600 330 Q 580 310 600 280"
-                      fill="rgba(34, 197, 94, 0.6)"
-                      stroke="rgba(34, 197, 94, 0.8)"
+                      fill="rgba(236, 72, 153, 0.3)"
+                      stroke="rgba(236, 72, 153, 0.6)"
                       strokeWidth="1"
                     />
                   </svg>
@@ -560,15 +565,16 @@ const MiningResourcesMap = () => {
                         title={`${deposit.projectName} - ${deposit.companyName}`}
                       >
                         <div 
-                          className={`w-4 h-4 rounded-full border-2 border-white shadow-lg ${
-                            isSelected ? 'ring-2 ring-blue-500 ring-offset-1' : ''
+                          className={`w-5 h-5 rounded-full border-2 border-white shadow-xl transition-all duration-300 ${
+                            isSelected ? 'ring-4 ring-blue-400 ring-offset-2 scale-125' : 'hover:scale-110'
                           }`}
                           style={{
-                            backgroundColor: resourceColors[deposit.resource] || '#666'
+                            backgroundColor: resourceColors[deposit.resource] || '#666',
+                            boxShadow: `0 0 20px ${resourceColors[deposit.resource] || '#666'}40`
                           }}
                         />
                         {isSelected && (
-                          <div className="absolute top-5 left-1/2 transform -translate-x-1/2 bg-white px-2 py-1 rounded shadow-lg text-xs whitespace-nowrap z-20">
+                          <div className="absolute top-6 left-1/2 transform -translate-x-1/2 bg-white/10 backdrop-blur-xl border border-white/20 px-3 py-2 rounded-lg shadow-2xl text-xs whitespace-nowrap z-20 text-white font-medium">
                             {deposit.projectName}
                           </div>
                         )}
@@ -578,16 +584,19 @@ const MiningResourcesMap = () => {
                 </div>
                 
                 {/* Legend */}
-                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                  <Label className="text-sm font-medium text-gray-700 mb-2 block">Resource Types</Label>
-                  <div className="flex flex-wrap gap-3">
+                <div className="mt-6 p-4 bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl">
+                  <Label className="text-sm font-medium text-white mb-3 block">Resource Types</Label>
+                  <div className="flex flex-wrap gap-4">
                     {uniqueResources.map(resource => (
                       <div key={resource} className="flex items-center space-x-2">
                         <div 
-                          className="w-3 h-3 rounded-full border border-white"
-                          style={{ backgroundColor: resourceColors[resource] || '#666' }}
+                          className="w-3 h-3 rounded-full border border-white shadow-lg"
+                          style={{ 
+                            backgroundColor: resourceColors[resource] || '#666',
+                            boxShadow: `0 0 10px ${resourceColors[resource] || '#666'}60`
+                          }}
                         />
-                        <span className="text-xs text-gray-600">{resource}</span>
+                        <span className="text-xs text-gray-300 font-medium">{resource}</span>
                       </div>
                     ))}
                   </div>
@@ -600,118 +609,124 @@ const MiningResourcesMap = () => {
 
       {/* Add Deposit Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl">
           <DialogHeader>
-            <DialogTitle>Add New Mining Deposit</DialogTitle>
+            <DialogTitle className="text-white">Add New Mining Deposit</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="company">Company Name*</Label>
-              <Input
-                id="company"
-                required
-                value={formData.companyName}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, companyName: e.target.value})}
-              />
-            </div>
-            <div>
-              <Label htmlFor="project">Project Name*</Label>
-              <Input
-                id="project"
-                required
-                value={formData.projectName}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, projectName: e.target.value})}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-4">
               <div>
-                <Label htmlFor="resource">Resource*</Label>
-                <Select value={formData.resource} onValueChange={(value: string) => setFormData({...formData, resource: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select resource" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.keys(resourceColors).map(resource => (
-                      <SelectItem key={resource} value={resource}>{resource}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="status">Status</Label>
-                <Select value={formData.status} onValueChange={(value: string) => setFormData({...formData, status: value})}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Active">Active</SelectItem>
-                    <SelectItem value="Inactive">Inactive</SelectItem>
-                    <SelectItem value="Exploration">Exploration</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="latitude">Latitude*</Label>
+                <Label htmlFor="company" className="text-gray-300 font-medium">Company Name*</Label>
                 <Input
-                  id="latitude"
-                  type="number"
-                  step="any"
+                  id="company"
                   required
-                  placeholder="e.g., 40.2731"
-                  value={formData.latitude}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, latitude: e.target.value})}
+                  value={formData.companyName}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, companyName: e.target.value})}
+                  className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:bg-white/20 focus:border-blue-400"
+                />
+              </div>
+                          <div>
+                <Label htmlFor="project" className="text-gray-300 font-medium">Project Name*</Label>
+                <Input
+                  id="project"
+                  required
+                  value={formData.projectName}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, projectName: e.target.value})}
+                  className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:bg-white/20 focus:border-blue-400"
+                />
+              </div>
+                          <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="resource" className="text-gray-300 font-medium">Resource*</Label>
+                  <Select value={formData.resource} onValueChange={(value: string) => setFormData({...formData, resource: value})}>
+                    <SelectTrigger className="bg-white/10 border-white/20 text-white focus:bg-white/20 focus:border-blue-400">
+                      <SelectValue placeholder="Select resource" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-800 border-white/20">
+                      {Object.keys(resourceColors).map(resource => (
+                        <SelectItem key={resource} value={resource} className="text-white hover:bg-slate-700">{resource}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="status" className="text-gray-300 font-medium">Status</Label>
+                  <Select value={formData.status} onValueChange={(value: string) => setFormData({...formData, status: value})}>
+                    <SelectTrigger className="bg-white/10 border-white/20 text-white focus:bg-white/20 focus:border-blue-400">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-800 border-white/20">
+                      <SelectItem value="Active" className="text-white hover:bg-slate-700">Active</SelectItem>
+                      <SelectItem value="Inactive" className="text-white hover:bg-slate-700">Inactive</SelectItem>
+                      <SelectItem value="Exploration" className="text-white hover:bg-slate-700">Exploration</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+                          <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="latitude" className="text-gray-300 font-medium">Latitude*</Label>
+                  <Input
+                    id="latitude"
+                    type="number"
+                    step="any"
+                    required
+                    placeholder="e.g., 40.2731"
+                    value={formData.latitude}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, latitude: e.target.value})}
+                    className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:bg-white/20 focus:border-blue-400"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="longitude" className="text-gray-300 font-medium">Longitude*</Label>
+                  <Input
+                    id="longitude"
+                    type="number"
+                    step="any"
+                    required
+                    placeholder="e.g., -116.6374"
+                    value={formData.longitude}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, longitude: e.target.value})}
+                    className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:bg-white/20 focus:border-blue-400"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="country" className="text-gray-300 font-medium">Country*</Label>
+                <Input
+                  id="country"
+                  required
+                  value={formData.country}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, country: e.target.value})}
+                  className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:bg-white/20 focus:border-blue-400"
                 />
               </div>
               <div>
-                <Label htmlFor="longitude">Longitude*</Label>
-                <Input
-                  id="longitude"
-                  type="number"
-                  step="any"
-                  required
-                  placeholder="e.g., -116.6374"
-                  value={formData.longitude}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, longitude: e.target.value})}
+                <Label htmlFor="description" className="text-gray-300 font-medium">Description</Label>
+                <Textarea
+                  id="description"
+                  rows={2}
+                  value={formData.description}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({...formData, description: e.target.value})}
+                  className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:bg-white/20 focus:border-blue-400"
                 />
               </div>
-            </div>
-            <div>
-              <Label htmlFor="country">Country*</Label>
-              <Input
-                id="country"
-                required
-                value={formData.country}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, country: e.target.value})}
-              />
-            </div>
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                rows={2}
-                value={formData.description}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({...formData, description: e.target.value})}
-              />
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="button" className="bg-blue-600 hover:bg-blue-700" onClick={handleAddDeposit}>
-                Add Deposit
-              </Button>
-            </div>
+              <div className="flex justify-end space-x-3 pt-4">
+                <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)} className="border-white/20 text-white hover:bg-white/10">
+                  Cancel
+                </Button>
+                <Button type="button" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium" onClick={handleAddDeposit}>
+                  Add Deposit
+                </Button>
+              </div>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Edit Deposit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl">
           <DialogHeader>
-            <DialogTitle>Edit Mining Deposit</DialogTitle>
+            <DialogTitle className="text-white">Edit Mining Deposit</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -802,11 +817,11 @@ const MiningResourcesMap = () => {
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({...formData, description: e.target.value})}
               />
             </div>
-            <div className="flex justify-end space-x-2">
-              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+            <div className="flex justify-end space-x-3 pt-4">
+              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)} className="border-white/20 text-white hover:bg-white/10">
                 Cancel
               </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700" onClick={handleEditDeposit}>
+              <Button type="submit" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium" onClick={handleEditDeposit}>
                 Update Deposit
               </Button>
             </div>
@@ -815,6 +830,6 @@ const MiningResourcesMap = () => {
       </Dialog>
     </div>
   );
-};
-
+  };
+  
 export default MiningResourcesMap;
