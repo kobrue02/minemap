@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Edit3, Search, Filter, MapPin, Building2, Pickaxe } from 'lucide-react';
+import { Plus, Edit3, Search, Filter, MapPin, Trash2, Pickaxe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -155,6 +155,25 @@ const MiningResourcesMap = () => {
     return () => window.removeEventListener('resize', updateDimensions);
   }, []);
 
+  // Load deposits from API on component mount
+  useEffect(() => {
+    const fetchDeposits = async () => {
+      try {
+        const response = await fetch('/api/deposits');
+        if (response.ok) {
+          const data = await response.json();
+          setMiningData(data);
+        } else {
+          console.error('Failed to fetch deposits');
+        }
+      } catch (error) {
+        console.error('Error fetching deposits:', error);
+      }
+    };
+
+    fetchDeposits();
+  }, []);
+
   // Filter data based on search and resource filter
   useEffect(() => {
     let filtered = miningData;
@@ -182,46 +201,86 @@ const MiningResourcesMap = () => {
   };
 
   // Handle form submission for new deposit
-  const handleAddDeposit = (e: React.FormEvent) => {
+  const handleAddDeposit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newDeposit = {
-      id: Math.max(...miningData.map(d => d.id)) + 1,
-      ...formData,
-      latitude: parseFloat(formData.latitude),
-      longitude: parseFloat(formData.longitude)
-    };
-    setMiningData([...miningData, newDeposit]);
-    setFormData({
-      companyName: '',
-      projectName: '',
-      resource: '',
-      latitude: '',
-      longitude: '',
-      country: '',
-      status: 'Active',
-      description: ''
-    });
-    setIsAddDialogOpen(false);
+    try {
+      const response = await fetch('/api/deposits', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          company_name: formData.companyName,
+          project_name: formData.projectName,
+          resource: formData.resource,
+          latitude: parseFloat(formData.latitude),
+          longitude: parseFloat(formData.longitude),
+          country: formData.country,
+          status: formData.status,
+          description: formData.description
+        }),
+      });
+
+      if (response.ok) {
+        const newDeposit = await response.json();
+        setMiningData([...miningData, newDeposit]);
+        setFormData({
+          companyName: '',
+          projectName: '',
+          resource: '',
+          latitude: '',
+          longitude: '',
+          country: '',
+          status: 'Active',
+          description: ''
+        });
+        setIsAddDialogOpen(false);
+      } else {
+        console.error('Failed to add deposit');
+      }
+    } catch (error) {
+      console.error('Error adding deposit:', error);
+    }
   };
 
   // Handle form submission for editing deposit
-  const handleEditDeposit = (e: React.FormEvent) => {
+  const handleEditDeposit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingDeposit) return;
-    const updatedData = miningData.map(deposit =>
-      deposit.id === editingDeposit.id
-        ? {
-            ...formData,
-            id: editingDeposit.id,
-            latitude: parseFloat(formData.latitude),
-            longitude: parseFloat(formData.longitude)
-          }
-        : deposit
-    );
-    setMiningData(updatedData);
-    setIsEditDialogOpen(false);
-    setEditingDeposit(null);
-    setSelectedDeposit(null);
+    
+    try {
+      const response = await fetch(`/api/deposits/${editingDeposit.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          companyName: formData.companyName,
+          projectName: formData.projectName,
+          resource: formData.resource,
+          latitude: parseFloat(formData.latitude),
+          longitude: parseFloat(formData.longitude),
+          country: formData.country,
+          status: formData.status,
+          description: formData.description
+        }),
+      });
+
+      if (response.ok) {
+        const updatedDeposit = await response.json();
+        const updatedData = miningData.map(deposit =>
+          deposit.id === editingDeposit.id ? updatedDeposit : deposit
+        );
+        setMiningData(updatedData);
+        setIsEditDialogOpen(false);
+        setEditingDeposit(null);
+        setSelectedDeposit(null);
+      } else {
+        console.error('Failed to update deposit');
+      }
+    } catch (error) {
+      console.error('Error updating deposit:', error);
+    }
   };
 
   // Open edit dialog
@@ -238,6 +297,26 @@ const MiningResourcesMap = () => {
       description: deposit.description
     });
     setIsEditDialogOpen(true);
+  };
+
+  // Handle delete deposit
+  const handleDeleteDeposit = async (depositId: number) => {
+    try {
+      const response = await fetch(`/api/deposits/${depositId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setMiningData(miningData.filter(deposit => deposit.id !== depositId));
+        if (selectedDeposit?.id === depositId) {
+          setSelectedDeposit(null);
+        }
+      } else {
+        console.error('Failed to delete deposit');
+      }
+    } catch (error) {
+      console.error('Error deleting deposit:', error);
+    }
   };
 
   const uniqueResources = [...new Set(miningData.map(d => d.resource))];
@@ -329,14 +408,25 @@ const MiningResourcesMap = () => {
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg">Deposit Details</CardTitle>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openEditDialog(selectedDeposit)}
-                    >
-                      <Edit3 className="h-3 w-3 mr-1" />
-                      Edit
-                    </Button>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openEditDialog(selectedDeposit)}
+                      >
+                        <Edit3 className="h-3 w-3 mr-1" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteDeposit(selectedDeposit.id)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        Delete
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">

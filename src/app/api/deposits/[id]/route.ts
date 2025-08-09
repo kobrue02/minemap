@@ -18,7 +18,7 @@ export async function GET(
     if (error) throw error
     
     return NextResponse.json(data)
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Failed to fetch deposit' }, 
       { status: 500 }
@@ -80,7 +80,7 @@ export async function DELETE(
     if (error) throw error
     
     return NextResponse.json({ success: true })
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Failed to delete deposit' }, 
       { status: 500 }
