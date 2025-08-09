@@ -4,10 +4,10 @@ import { supabaseAdmin } from '@/lib/supabase'
 // GET - Get single deposit by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
 
     const { data, error } = await supabaseAdmin
       .from('mining_deposits')
@@ -29,11 +29,11 @@ export async function GET(
 // PUT - Update deposit by ID
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const body = await request.json()
-    const { id } = params
+    const { id } = await params
 
     const { data, error } = await supabaseAdmin
       .from('mining_deposits')
@@ -67,10 +67,10 @@ export async function PUT(
 // DELETE - Delete deposit by ID
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
 
     const { error } = await supabaseAdmin
       .from('mining_deposits')
