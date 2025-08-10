@@ -183,7 +183,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ deposits, selectedDeposit, 
   }, [selectedDeposit, deposits]);
 
   return (
-    <div className="relative w-full h-96 rounded-lg overflow-hidden border border-gray-200">
+    <div className="relative w-full h-96 overflow-hidden border border-gray-200">
       <div 
         ref={mapRef} 
         className="w-full h-full"
@@ -194,7 +194,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ deposits, selectedDeposit, 
       
       {/* Map overlay with subtle border */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute inset-0 border border-gray-100 rounded-lg"></div>
+        <div className="absolute inset-0 border border-gray-100"></div>
       </div>
     </div>
   );
