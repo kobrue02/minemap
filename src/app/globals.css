@@ -212,3 +212,47 @@
 .custom-marker:hover {
   transform: scale(1.2);
 }
+
+/* Z-index management for map overlays */
+.leaflet-container {
+  z-index: 1;
+}
+
+.leaflet-control-container {
+  z-index: 800;
+}
+
+.leaflet-popup-pane {
+  z-index: 700;
+}
+
+.leaflet-tooltip-pane {
+  z-index: 650;
+}
+
+.leaflet-shadow-pane {
+  z-index: 500;
+}
+
+.leaflet-marker-pane {
+  z-index: 600;
+}
+
+/* Ensure UI overlays are above map */
+.ui-overlay {
+  z-index: 1000;
+}
+
+/* Select dropdown z-index */
+[data-radix-popper-content-wrapper] {
+  z-index: 1010 !important;
+}
+
+/* Dialog overlay z-index */
+[data-radix-dialog-overlay] {
+  z-index: 1005 !important;
+}
+
+[data-radix-dialog-content] {
+  z-index: 1010 !important;
+}

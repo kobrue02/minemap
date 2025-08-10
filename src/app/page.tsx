@@ -318,7 +318,7 @@ const MiningResourcesMap = () => {
   return (
     <div className="h-screen bg-slate-50 relative overflow-hidden">
       {/* Top Header Bar */}
-      <div className="absolute top-0 left-0 right-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
+      <div className="absolute top-0 left-0 right-0 z-[1000] bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
         <div className="flex items-center justify-between px-6 py-3">
           <div className="flex items-center space-x-3">
             <div className="flex items-center space-x-2">
@@ -370,7 +370,7 @@ const MiningResourcesMap = () => {
 
         {/* Collapsible Filters */}
         {showFilters && (
-          <div className="px-6 pb-3 border-t border-slate-200/50">
+          <div className="px-6 pb-3 border-t border-slate-200/50 bg-white/95 backdrop-blur-sm">
             <div className="flex items-center space-x-4 pt-3">
               <div className="flex items-center space-x-2">
                 <Label className="text-sm font-medium text-slate-700">Resource:</Label>
@@ -378,7 +378,7 @@ const MiningResourcesMap = () => {
                   <SelectTrigger className="w-40 h-8 bg-white border-slate-200 text-slate-900">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white border-slate-200 z-[1010]">
                     <SelectItem value="all">All Resources</SelectItem>
                     {uniqueResources.map(resource => (
                       <SelectItem key={resource} value={resource}>
@@ -428,7 +428,7 @@ const MiningResourcesMap = () => {
 
       {/* Floating Deposit Details Panel */}
       {selectedDeposit && (
-        <div className="absolute bottom-6 right-6 z-20 w-96">
+        <div className="absolute bottom-6 right-6 z-[1000] w-96">
           <Card className="bg-white/95 backdrop-blur-sm border border-slate-200 shadow-xl">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
@@ -511,7 +511,7 @@ const MiningResourcesMap = () => {
 
       {/* Add Deposit Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="max-w-md bg-white border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-md bg-white border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto z-[1010]">
           <DialogHeader className="pb-4">
             <DialogTitle className="text-slate-900 text-lg">Add New Mining Deposit</DialogTitle>
           </DialogHeader>
@@ -543,7 +543,7 @@ const MiningResourcesMap = () => {
                   <SelectTrigger className="mt-1 bg-white border-slate-300 text-slate-900 focus:border-slate-500 h-9">
                     <SelectValue placeholder="Select resource" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white border-slate-200 z-[1010]">
                     {Object.keys(resourceColors).map(resource => (
                       <SelectItem key={resource} value={resource}>{resource}</SelectItem>
                     ))}
@@ -624,7 +624,7 @@ const MiningResourcesMap = () => {
 
       {/* Edit Deposit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-md bg-white border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-md bg-white border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto z-[1010]">
           <DialogHeader className="pb-4">
             <DialogTitle className="text-slate-900 text-lg">Edit Mining Deposit</DialogTitle>
           </DialogHeader>
