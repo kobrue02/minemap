@@ -183,18 +183,18 @@ const MapComponent: React.FC<MapComponentProps> = ({ deposits, selectedDeposit, 
   }, [selectedDeposit, deposits]);
 
   return (
-    <div className="relative w-full h-96 rounded-xl overflow-hidden border border-white/20">
+    <div className="relative w-full h-96 rounded-lg overflow-hidden border border-gray-200">
       <div 
         ref={mapRef} 
         className="w-full h-full"
         style={{ 
-          background: 'linear-gradient(135deg, #1e293b 0%, #334155 25%, #475569 50%, #64748b 75%, #94a3b8 100%)'
+          background: '#ffffff'
         }}
       />
       
-      {/* Map overlay with gradient */}
+      {/* Map overlay with subtle border */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/20 via-transparent to-purple-900/20"></div>
+        <div className="absolute inset-0 border border-gray-100 rounded-lg"></div>
       </div>
     </div>
   );
