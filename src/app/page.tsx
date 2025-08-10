@@ -326,7 +326,7 @@ const MiningResourcesMap = () => {
                 <Pickaxe className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-semibold text-slate-900">Global Mining Resources</h1>
+                <h1 className="text-lg font-semibold text-slate-900">Minemap.co</h1>
                 <p className="text-xs text-slate-500">{filteredData.length} deposits worldwide</p>
               </div>
             </div>
