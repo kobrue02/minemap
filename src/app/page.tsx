@@ -128,6 +128,10 @@ const MiningResourcesMap = () => {
   const [editingDeposit, setEditingDeposit] = useState<MiningDeposit | null>(null);
   const mapRef = useRef<HTMLDivElement>(null);
   const [mapDimensions, setMapDimensions] = useState({ width: 800, height: 400 });
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
   // Form state for new/edit deposit
   const [formData, setFormData] = useState<FormData>({
@@ -193,11 +197,52 @@ const MiningResourcesMap = () => {
     setFilteredData(filtered);
   }, [miningData, searchTerm, resourceFilter]);
 
-  // Convert lat/lng to map coordinates
+  // Convert lat/lng to map coordinates with zoom and pan
   const coordsToMapPosition = (lat: number, lng: number) => {
-    const x = ((lng + 180) / 360) * mapDimensions.width;
-    const y = ((90 - lat) / 180) * mapDimensions.height;
+    const baseX = ((lng + 180) / 360) * mapDimensions.width;
+    const baseY = ((90 - lat) / 180) * mapDimensions.height;
+    const x = (baseX - pan.x) * zoom + mapDimensions.width / 2;
+    const y = (baseY - pan.y) * zoom + mapDimensions.height / 2;
     return { x, y };
+  };
+
+  // Handle zoom
+  const handleZoom = (delta: number, centerX: number, centerY: number) => {
+    const newZoom = Math.max(0.5, Math.min(5, zoom + delta * 0.1));
+    const zoomRatio = newZoom / zoom;
+    
+    setPan(prev => ({
+      x: prev.x - (centerX - mapDimensions.width / 2) * (1 - zoomRatio) / newZoom,
+      y: prev.y - (centerY - mapDimensions.height / 2) * (1 - zoomRatio) / newZoom
+    }));
+    setZoom(newZoom);
+  };
+
+  // Handle mouse events for panning
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isDragging) {
+      setPan({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const centerX = e.clientX - rect.left;
+    const centerY = e.clientY - rect.top;
+    handleZoom(e.deltaY > 0 ? -1 : 1, centerX, centerY);
   };
 
   // Handle form submission for new deposit
@@ -480,13 +525,13 @@ const MiningResourcesMap = () => {
                   World Mining Deposits Map
                 </CardTitle>
                 <CardDescription className="text-gray-300">
-                  Click on markers to view deposit details
+                  Click on markers to view deposit details • Scroll to zoom • Drag to pan
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div 
                   ref={mapRef}
-                  className="relative w-full h-96 rounded-xl overflow-hidden border border-white/20"
+                  className="relative w-full h-96 rounded-xl overflow-hidden border border-white/20 cursor-grab active:cursor-grabbing map-container"
                   style={{
                     backgroundImage: `
                       radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.3) 0%, transparent 50%),
@@ -494,57 +539,226 @@ const MiningResourcesMap = () => {
                       linear-gradient(135deg, #1e293b 0%, #334155 25%, #475569 50%, #64748b 75%, #94a3b8 100%)
                     `
                   }}
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp}
+                  onWheel={handleWheel}
                 >
-                  {/* Continent shapes (simplified) */}
-                  <svg className="absolute inset-0 w-full h-full">
-                    {/* North America */}
-                    <path
-                      d="M 100 80 Q 150 60 200 80 Q 250 70 280 90 Q 300 120 280 150 Q 250 180 200 170 Q 150 160 120 180 Q 80 150 100 80"
-                      fill="rgba(59, 130, 246, 0.3)"
-                      stroke="rgba(59, 130, 246, 0.6)"
-                      strokeWidth="1"
-                    />
-                    
-                    {/* South America */}
-                    <path
-                      d="M 180 200 Q 220 190 240 220 Q 250 260 240 300 Q 220 340 200 360 Q 180 340 170 300 Q 160 260 180 200"
-                      fill="rgba(147, 51, 234, 0.3)"
-                      stroke="rgba(147, 51, 234, 0.6)"
-                      strokeWidth="1"
-                    />
-                    
-                    {/* Africa */}
-                    <path
-                      d="M 380 140 Q 420 130 450 160 Q 460 200 450 240 Q 440 280 420 300 Q 380 310 360 280 Q 350 240 360 200 Q 370 160 380 140"
-                      fill="rgba(34, 197, 94, 0.3)"
-                      stroke="rgba(34, 197, 94, 0.6)"
-                      strokeWidth="1"
-                    />
-                    
-                    {/* Europe */}
-                    <path
-                      d="M 380 60 Q 420 50 450 70 Q 460 90 450 110 Q 420 120 380 110 Q 360 90 380 60"
-                      fill="rgba(239, 68, 68, 0.3)"
-                      stroke="rgba(239, 68, 68, 0.6)"
-                      strokeWidth="1"
-                    />
-                    
-                    {/* Asia */}
-                    <path
-                      d="M 480 60 Q 580 50 650 80 Q 700 100 720 140 Q 710 180 680 200 Q 620 210 580 190 Q 520 180 480 160 Q 460 120 480 60"
-                      fill="rgba(245, 158, 11, 0.3)"
-                      stroke="rgba(245, 158, 11, 0.6)"
-                      strokeWidth="1"
-                    />
-                    
-                    {/* Australia */}
-                    <path
-                      d="M 600 280 Q 650 270 680 290 Q 690 310 680 330 Q 650 340 600 330 Q 580 310 600 280"
-                      fill="rgba(236, 72, 153, 0.3)"
-                      stroke="rgba(236, 72, 153, 0.6)"
-                      strokeWidth="1"
-                    />
+                  {/* Ocean background with animation */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 opacity-20 animate-pulse"></div>
+                  
+                  {/* Ocean waves effect */}
+                  <div className="absolute inset-0 opacity-10">
+                    <svg className="w-full h-full" viewBox="0 0 1000 500">
+                      {Array.from({ length: 20 }, (_, i) => (
+                        <path
+                          key={i}
+                          d={`M 0 ${i * 25} Q 250 ${i * 25 + 5} 500 ${i * 25} Q 750 ${i * 25 - 5} 1000 ${i * 25}`}
+                          stroke="rgba(255, 255, 255, 0.3)"
+                          strokeWidth="1"
+                          fill="none"
+                          style={{
+                            animation: `wave ${3 + i * 0.1}s ease-in-out infinite`
+                          }}
+                        />
+                      ))}
+                    </svg>
+                  </div>
+                  
+                  {/* Detailed World Map */}
+                  <svg 
+                    className="absolute inset-0 w-full h-full" 
+                    viewBox="0 0 1000 500"
+                    style={{
+                      transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
+                      transition: isDragging ? 'none' : 'transform 0.1s ease-out'
+                    }}
+                  >
+                    {/* North America - Detailed */}
+                    <g className="continent north-america">
+                      {/* Alaska */}
+                      <path d="M 50 50 L 80 45 L 90 50 L 85 60 L 70 65 L 55 60 Z" fill="rgba(59, 130, 246, 0.4)" stroke="rgba(59, 130, 246, 0.8)" strokeWidth="0.5"/>
+                      {/* Canada */}
+                      <path d="M 80 45 L 120 40 L 140 50 L 150 70 L 140 90 L 120 100 L 100 95 L 85 85 L 70 75 L 55 60 L 70 65 Z" fill="rgba(59, 130, 246, 0.4)" stroke="rgba(59, 130, 246, 0.8)" strokeWidth="0.5"/>
+                      {/* USA */}
+                      <path d="M 120 40 L 180 35 L 200 45 L 210 65 L 200 85 L 180 95 L 160 90 L 140 80 L 120 70 L 100 95 L 120 100 Z" fill="rgba(59, 130, 246, 0.4)" stroke="rgba(59, 130, 246, 0.8)" strokeWidth="0.5"/>
+                      {/* Mexico */}
+                      <path d="M 180 35 L 220 30 L 240 40 L 250 60 L 240 80 L 220 90 L 200 85 L 180 95 Z" fill="rgba(147, 51, 234, 0.4)" stroke="rgba(147, 51, 234, 0.8)" strokeWidth="0.5"/>
+                      {/* Central America */}
+                      <path d="M 220 30 L 240 25 L 250 35 L 260 55 L 250 75 L 240 80 L 220 90 Z" fill="rgba(34, 197, 94, 0.4)" stroke="rgba(34, 197, 94, 0.8)" strokeWidth="0.5"/>
+                    </g>
+
+                    {/* South America - Detailed */}
+                    <g className="continent south-america">
+                      {/* Brazil */}
+                      <path d="M 240 25 L 280 20 L 320 25 L 340 45 L 350 75 L 340 105 L 320 125 L 280 130 L 260 120 L 250 100 L 240 80 L 250 75 Z" fill="rgba(34, 197, 94, 0.4)" stroke="rgba(34, 197, 94, 0.8)" strokeWidth="0.5"/>
+                      {/* Argentina */}
+                      <path d="M 280 20 L 300 15 L 320 20 L 330 40 L 340 60 L 330 80 L 320 100 L 300 105 L 280 100 L 270 80 L 280 60 L 290 40 Z" fill="rgba(239, 68, 68, 0.4)" stroke="rgba(239, 68, 68, 0.8)" strokeWidth="0.5"/>
+                      {/* Chile */}
+                      <path d="M 300 15 L 320 10 L 330 20 L 340 40 L 330 60 L 320 80 L 300 85 L 290 65 L 300 45 Z" fill="rgba(245, 158, 11, 0.4)" stroke="rgba(245, 158, 11, 0.8)" strokeWidth="0.5"/>
+                    </g>
+
+                    {/* Europe - Detailed */}
+                    <g className="continent europe">
+                      {/* Scandinavia */}
+                      <path d="M 450 30 L 470 25 L 480 35 L 475 45 L 465 50 L 455 45 Z" fill="rgba(59, 130, 246, 0.4)" stroke="rgba(59, 130, 246, 0.8)" strokeWidth="0.5"/>
+                      {/* UK */}
+                      <path d="M 440 40 L 450 35 L 455 40 L 450 45 L 445 45 Z" fill="rgba(239, 68, 68, 0.4)" stroke="rgba(239, 68, 68, 0.8)" strokeWidth="0.5"/>
+                      {/* France */}
+                      <path d="M 445 45 L 455 40 L 465 45 L 460 55 L 450 55 Z" fill="rgba(147, 51, 234, 0.4)" stroke="rgba(147, 51, 234, 0.8)" strokeWidth="0.5"/>
+                      {/* Germany */}
+                      <path d="M 455 40 L 475 35 L 485 45 L 480 55 L 465 55 L 455 50 Z" fill="rgba(34, 197, 94, 0.4)" stroke="rgba(34, 197, 94, 0.8)" strokeWidth="0.5"/>
+                      {/* Italy */}
+                      <path d="M 465 55 L 475 50 L 480 60 L 475 70 L 465 65 Z" fill="rgba(245, 158, 11, 0.4)" stroke="rgba(245, 158, 11, 0.8)" strokeWidth="0.5"/>
+                      {/* Spain */}
+                      <path d="M 440 55 L 450 50 L 455 60 L 450 70 L 445 65 Z" fill="rgba(236, 72, 153, 0.4)" stroke="rgba(236, 72, 153, 0.8)" strokeWidth="0.5"/>
+                    </g>
+
+                    {/* Africa - Detailed */}
+                    <g className="continent africa">
+                      {/* North Africa */}
+                      <path d="M 450 50 L 500 45 L 520 55 L 530 75 L 520 95 L 500 105 L 480 100 L 465 90 L 455 75 L 450 60 Z" fill="rgba(34, 197, 94, 0.4)" stroke="rgba(34, 197, 94, 0.8)" strokeWidth="0.5"/>
+                      {/* West Africa */}
+                      <path d="M 480 100 L 520 95 L 540 105 L 550 125 L 540 145 L 520 155 L 500 150 L 485 140 L 480 125 Z" fill="rgba(59, 130, 246, 0.4)" stroke="rgba(59, 130, 246, 0.8)" strokeWidth="0.5"/>
+                      {/* Central Africa */}
+                      <path d="M 520 95 L 560 90 L 580 100 L 590 120 L 580 140 L 560 150 L 540 145 L 520 155 Z" fill="rgba(147, 51, 234, 0.4)" stroke="rgba(147, 51, 234, 0.8)" strokeWidth="0.5"/>
+                      {/* East Africa */}
+                      <path d="M 560 90 L 600 85 L 620 95 L 630 115 L 620 135 L 600 145 L 580 140 L 560 150 Z" fill="rgba(239, 68, 68, 0.4)" stroke="rgba(239, 68, 68, 0.8)" strokeWidth="0.5"/>
+                      {/* South Africa */}
+                      <path d="M 540 145 L 580 140 L 600 150 L 610 170 L 600 190 L 580 200 L 560 195 L 545 185 L 540 170 Z" fill="rgba(245, 158, 11, 0.4)" stroke="rgba(245, 158, 11, 0.8)" strokeWidth="0.5"/>
+                    </g>
+
+                    {/* Asia - Detailed */}
+                    <g className="continent asia">
+                      {/* Russia */}
+                      <path d="M 480 35 L 600 30 L 650 40 L 680 60 L 690 80 L 680 100 L 650 120 L 600 125 L 550 120 L 500 115 L 480 105 L 470 85 L 480 65 Z" fill="rgba(59, 130, 246, 0.4)" stroke="rgba(59, 130, 246, 0.8)" strokeWidth="0.5"/>
+                      {/* China */}
+                      <path d="M 600 30 L 700 25 L 750 35 L 760 55 L 750 75 L 700 85 L 650 80 L 600 75 L 550 70 L 500 75 L 480 85 L 470 85 Z" fill="rgba(239, 68, 68, 0.4)" stroke="rgba(239, 68, 68, 0.8)" strokeWidth="0.5"/>
+                      {/* India */}
+                      <path d="M 550 70 L 600 65 L 620 75 L 630 95 L 620 115 L 600 125 L 580 120 L 570 100 L 560 80 Z" fill="rgba(34, 197, 94, 0.4)" stroke="rgba(34, 197, 94, 0.8)" strokeWidth="0.5"/>
+                      {/* Japan */}
+                      <path d="M 750 35 L 760 30 L 765 35 L 760 40 L 755 40 Z" fill="rgba(147, 51, 234, 0.4)" stroke="rgba(147, 51, 234, 0.8)" strokeWidth="0.5"/>
+                      {/* Southeast Asia */}
+                      <path d="M 600 65 L 650 60 L 670 70 L 680 90 L 670 110 L 650 120 L 630 115 L 620 95 L 610 75 Z" fill="rgba(245, 158, 11, 0.4)" stroke="rgba(245, 158, 11, 0.8)" strokeWidth="0.5"/>
+                    </g>
+
+                    {/* Australia - Detailed */}
+                    <g className="continent australia">
+                      {/* Mainland */}
+                      <path d="M 700 200 L 750 195 L 780 205 L 790 225 L 780 245 L 750 255 L 720 250 L 710 230 L 700 210 Z" fill="rgba(236, 72, 153, 0.4)" stroke="rgba(236, 72, 153, 0.8)" strokeWidth="0.5"/>
+                      {/* Tasmania */}
+                      <path d="M 720 250 L 730 245 L 735 250 L 730 255 L 725 255 Z" fill="rgba(59, 130, 246, 0.4)" stroke="rgba(59, 130, 246, 0.8)" strokeWidth="0.5"/>
+                    </g>
+
+                    {/* Greenland */}
+                    <path d="M 120 40 L 140 35 L 150 45 L 145 55 L 135 60 L 125 55 Z" fill="rgba(147, 51, 234, 0.4)" stroke="rgba(147, 51, 234, 0.8)" strokeWidth="0.5"/>
+
+                    {/* Iceland */}
+                    <path d="M 430 35 L 435 30 L 440 35 L 435 40 L 430 40 Z" fill="rgba(34, 197, 94, 0.4)" stroke="rgba(34, 197, 94, 0.8)" strokeWidth="0.5"/>
+
+                    {/* New Zealand */}
+                    <path d="M 800 220 L 820 215 L 830 225 L 825 235 L 815 240 L 805 235 Z" fill="rgba(245, 158, 11, 0.4)" stroke="rgba(245, 158, 11, 0.8)" strokeWidth="0.5"/>
+
+                    {/* Grid lines for reference */}
+                    {zoom > 2 && (
+                      <g className="grid-lines" opacity="0.3">
+                        {/* Latitude lines */}
+                        {Array.from({ length: 18 }, (_, i) => (
+                          <line 
+                            key={`lat-${i}`} 
+                            x1="0" y1={i * 25 + 25} 
+                            x2="1000" y2={i * 25 + 25} 
+                            stroke="rgba(255,255,255,0.2)" 
+                            strokeWidth="0.5"
+                          />
+                        ))}
+                        {/* Longitude lines */}
+                        {Array.from({ length: 36 }, (_, i) => (
+                          <line 
+                            key={`lng-${i}`} 
+                            x1={i * 25 + 25} y1="0" 
+                            x2={i * 25 + 25} y2="500" 
+                            stroke="rgba(255,255,255,0.2)" 
+                            strokeWidth="0.5"
+                          />
+                        ))}
+                      </g>
+                    )}
+
+                    {/* Country borders (more detailed at higher zoom) */}
+                    {zoom > 1.5 && (
+                      <g className="country-borders" opacity="0.6">
+                        {/* Major rivers */}
+                        <path d="M 200 45 L 210 65 L 220 85 L 230 105" stroke="rgba(59, 130, 246, 0.8)" strokeWidth="1" fill="none"/>
+                        <path d="M 550 70 L 560 90 L 570 110 L 580 130" stroke="rgba(59, 130, 246, 0.8)" strokeWidth="1" fill="none"/>
+                        <path d="M 600 30 L 610 50 L 620 70 L 630 90" stroke="rgba(59, 130, 246, 0.8)" strokeWidth="1" fill="none"/>
+                        
+                        {/* Mountain ranges */}
+                        <path d="M 180 35 L 190 40 L 200 35 L 210 40 L 220 35" stroke="rgba(139, 69, 19, 0.6)" strokeWidth="2" fill="none"/>
+                        <path d="M 600 30 L 610 35 L 620 30 L 630 35 L 640 30" stroke="rgba(139, 69, 19, 0.6)" strokeWidth="2" fill="none"/>
+                        <path d="M 480 100 L 490 105 L 500 100 L 510 105 L 520 100" stroke="rgba(139, 69, 19, 0.6)" strokeWidth="2" fill="none"/>
+                      </g>
+                    )}
+
+                    {/* City markers at high zoom */}
+                    {zoom > 3 && (
+                      <g className="cities" opacity="0.8">
+                        {/* Major cities */}
+                        <circle cx="200" cy="65" r="2" fill="rgba(255, 255, 255, 0.8)"/>
+                        <circle cx="450" cy="40" r="2" fill="rgba(255, 255, 255, 0.8)"/>
+                        <circle cx="600" cy="75" r="2" fill="rgba(255, 255, 255, 0.8)"/>
+                        <circle cx="750" cy="35" r="2" fill="rgba(255, 255, 255, 0.8)"/>
+                        <circle cx="720" cy="230" r="2" fill="rgba(255, 255, 255, 0.8)"/>
+                      </g>
+                    )}
+
+                    {/* Terrain details at very high zoom */}
+                    {zoom > 4 && (
+                      <g className="terrain" opacity="0.4">
+                        {/* Forest areas */}
+                        <path d="M 120 70 L 125 72 L 130 70 L 135 72 L 140 70" stroke="rgba(34, 197, 94, 0.3)" strokeWidth="1" fill="none"/>
+                        <path d="M 480 105 L 485 107 L 490 105 L 495 107 L 500 105" stroke="rgba(34, 197, 94, 0.3)" strokeWidth="1" fill="none"/>
+                        
+                        {/* Desert areas */}
+                        <path d="M 500 45 L 505 47 L 510 45 L 515 47 L 520 45" stroke="rgba(245, 158, 11, 0.3)" strokeWidth="1" fill="none"/>
+                      </g>
+                    )}
                   </svg>
+
+                  {/* Zoom Controls */}
+                  <div className="absolute top-4 right-4 flex flex-col space-y-2 z-30">
+                    <button
+                      onClick={() => handleZoom(1, mapDimensions.width / 2, mapDimensions.height / 2)}
+                      className="w-10 h-10 bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg flex items-center justify-center text-white hover:bg-white/20 transition-all duration-200"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => handleZoom(-1, mapDimensions.width / 2, mapDimensions.height / 2)}
+                      className="w-10 h-10 bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg flex items-center justify-center text-white hover:bg-white/20 transition-all duration-200"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setZoom(1);
+                        setPan({ x: 0, y: 0 });
+                      }}
+                      className="w-10 h-10 bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg flex items-center justify-center text-white hover:bg-white/20 transition-all duration-200 text-xs font-medium"
+                    >
+                      Reset
+                    </button>
+                  </div>
+
+                  {/* Zoom Level Indicator */}
+                  <div className="absolute bottom-4 left-4 bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg px-3 py-2 text-white text-sm font-medium z-30">
+                    {Math.round(zoom * 100)}%
+                  </div>
 
                   {/* Deposit Markers */}
                   {filteredData.map((deposit) => {

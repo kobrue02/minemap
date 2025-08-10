@@ -120,3 +120,29 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Map animations */
+@keyframes wave {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(10px);
+  }
+}
+
+/* Map interaction styles */
+.map-container {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.map-container:active {
+  cursor: grabbing;
+}
+
+.map-container:hover {
+  cursor: grab;
+}
