@@ -1,15 +1,23 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic'; // ← This is the correct import
-import { Plus, Search, Filter, MapPin, X, Edit, Trash2, Pickaxe, ChevronDown } from 'lucide-react';
+import { Plus, Edit3, Search, Filter, MapPin, Trash2, Pickaxe, X, ChevronDown } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
-// Dynamic import of your MapComponent to avoid SSR issues
+// Dynamic import for Leaflet map (to avoid SSR issues)
 const MapComponent = dynamic(() => import('./MapComponent'), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full bg-gradient-to-br from-slate-100 via-blue-50 to-green-50 rounded-lg flex items-center justify-center">
-      <div className="text-gray-500">Loading map...</div>
+    <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg flex items-center justify-center">
+      <div className="text-white text-lg">Loading map...</div>
     </div>
   )
 });
@@ -126,11 +134,12 @@ const MiningResourcesMap = () => {
   const [selectedDeposit, setSelectedDeposit] = useState<MiningDeposit | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [resourceFilter, setResourceFilter] = useState('all');
-  const [showFilters, setShowFilters] = useState(false);
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingDeposit, setEditingDeposit] = useState<MiningDeposit | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
 
-  // Form state
+  // Form state for new/edit deposit
   const [formData, setFormData] = useState<FormData>({
     companyName: '',
     projectName: '',
@@ -142,7 +151,26 @@ const MiningResourcesMap = () => {
     description: ''
   });
 
-  // Filter data
+  // Load deposits from API on component mount
+  useEffect(() => {
+    const fetchDeposits = async () => {
+      try {
+        const response = await fetch('/api/deposits');
+        if (response.ok) {
+          const data = await response.json();
+          setMiningData(data);
+        } else {
+          console.error('Failed to fetch deposits');
+        }
+      } catch (error) {
+        console.error('Error fetching deposits:', error);
+      }
+    };
+
+    fetchDeposits();
+  }, []);
+
+  // Filter data based on search and resource filter
   useEffect(() => {
     let filtered = miningData;
 
@@ -161,68 +189,95 @@ const MiningResourcesMap = () => {
     setFilteredData(filtered);
   }, [miningData, searchTerm, resourceFilter]);
 
+  // Handle deposit selection from map
   const handleDepositSelect = (deposit: MiningDeposit) => {
     setSelectedDeposit(deposit);
   };
 
-  const resetForm = () => {
-    setFormData({
-      companyName: '',
-      projectName: '',
-      resource: '',
-      latitude: '',
-      longitude: '',
-      country: '',
-      status: 'Active',
-      description: ''
-    });
-  };
-
-  const handleAddDeposit = (e: React.FormEvent) => {
+  // Handle form submission for new deposit
+  const handleAddDeposit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newDeposit: MiningDeposit = {
-      id: Math.max(...miningData.map(d => d.id)) + 1,
-      companyName: formData.companyName,
-      projectName: formData.projectName,
-      resource: formData.resource,
-      latitude: parseFloat(formData.latitude),
-      longitude: parseFloat(formData.longitude),
-      country: formData.country,
-      status: formData.status,
-      description: formData.description
-    };
-    
-    setMiningData([...miningData, newDeposit]);
-    resetForm();
-    setShowAddForm(false);
+    try {
+      const response = await fetch('/api/deposits', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          company_name: formData.companyName,
+          project_name: formData.projectName,
+          resource: formData.resource,
+          latitude: parseFloat(formData.latitude),
+          longitude: parseFloat(formData.longitude),
+          country: formData.country,
+          status: formData.status,
+          description: formData.description
+        }),
+      });
+
+      if (response.ok) {
+        const newDeposit = await response.json();
+        setMiningData([...miningData, newDeposit]);
+        setFormData({
+          companyName: '',
+          projectName: '',
+          resource: '',
+          latitude: '',
+          longitude: '',
+          country: '',
+          status: 'Active',
+          description: ''
+        });
+        setIsAddDialogOpen(false);
+      } else {
+        console.error('Failed to add deposit');
+      }
+    } catch (error) {
+      console.error('Error adding deposit:', error);
+    }
   };
 
-  const handleEditDeposit = (e: React.FormEvent) => {
+  // Handle form submission for editing deposit
+  const handleEditDeposit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingDeposit) return;
     
-    const updatedData = miningData.map(deposit =>
-      deposit.id === editingDeposit.id 
-        ? {
-            ...deposit,
-            companyName: formData.companyName,
-            projectName: formData.projectName,
-            resource: formData.resource,
-            latitude: parseFloat(formData.latitude),
-            longitude: parseFloat(formData.longitude),
-            country: formData.country,
-            status: formData.status,
-            description: formData.description
-          }
-        : deposit
-    );
-    
-    setMiningData(updatedData);
-    setEditingDeposit(null);
-    setSelectedDeposit(null);
-    resetForm();
+    try {
+      const response = await fetch(`/api/deposits/${editingDeposit.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          companyName: formData.companyName,
+          projectName: formData.projectName,
+          resource: formData.resource,
+          latitude: parseFloat(formData.latitude),
+          longitude: parseFloat(formData.longitude),
+          country: formData.country,
+          status: formData.status,
+          description: formData.description
+        }),
+      });
+
+      if (response.ok) {
+        const updatedDeposit = await response.json();
+        const updatedData = miningData.map(deposit =>
+          deposit.id === editingDeposit.id ? updatedDeposit : deposit
+        );
+        setMiningData(updatedData);
+        setIsEditDialogOpen(false);
+        setEditingDeposit(null);
+        setSelectedDeposit(null);
+      } else {
+        console.error('Failed to update deposit');
+      }
+    } catch (error) {
+      console.error('Error updating deposit:', error);
+    }
   };
 
+  // Open edit dialog
   const openEditDialog = (deposit: MiningDeposit) => {
     setEditingDeposit(deposit);
     setFormData({
@@ -235,107 +290,133 @@ const MiningResourcesMap = () => {
       status: deposit.status,
       description: deposit.description
     });
+    setIsEditDialogOpen(true);
   };
 
-  const handleDeleteDeposit = (depositId: number) => {
-    setMiningData(miningData.filter(deposit => deposit.id !== depositId));
-    if (selectedDeposit?.id === depositId) {
-      setSelectedDeposit(null);
+  // Handle delete deposit
+  const handleDeleteDeposit = async (depositId: number) => {
+    try {
+      const response = await fetch(`/api/deposits/${depositId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setMiningData(miningData.filter(deposit => deposit.id !== depositId));
+        if (selectedDeposit?.id === depositId) {
+          setSelectedDeposit(null);
+        }
+      } else {
+        console.error('Failed to delete deposit');
+      }
+    } catch (error) {
+      console.error('Error deleting deposit:', error);
     }
   };
 
   const uniqueResources = [...new Set(miningData.map(d => d.resource))];
 
   return (
-    <div className="h-screen w-screen bg-gray-50 flex flex-col relative overflow-hidden">
-      {/* Top Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between relative z-30 shadow-sm">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-slate-900 rounded flex items-center justify-center">
-            <Pickaxe className="w-4 h-4 text-white" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold text-gray-900">Mining Resources</h1>
-            <p className="text-sm text-gray-500">{filteredData.length} deposits worldwide</p>
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-4">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search deposits..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 w-64 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-            />
-          </div>
-
-          {/* Filter Toggle */}
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center space-x-2 px-3 py-2 rounded-lg border transition-colors ${
-              showFilters ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            <Filter className="w-4 h-4" />
-            <span className="text-sm">Filter</span>
-            <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
-          </button>
-
-          {/* Add Button */}
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="flex items-center space-x-2 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="text-sm font-medium">Add Deposit</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Filters Dropdown */}
-      {showFilters && (
-        <div className="absolute top-20 right-6 w-64 bg-white rounded-lg border border-gray-200 shadow-lg z-40 p-4">
-          <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Resource Type</label>
-              <select
-                value={resourceFilter}
-                onChange={(e) => setResourceFilter(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="all">All Resources</option>
-                {uniqueResources.map(resource => (
-                  <option key={resource} value={resource}>{resource}</option>
-                ))}
-              </select>
-            </div>
-            
-            {/* Legend */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Legend</label>
-              <div className="space-y-2">
-                {uniqueResources.map(resource => (
-                  <div key={resource} className="flex items-center space-x-2">
-                    <div 
-                      className="w-3 h-3 rounded-full border border-gray-300"
-                      style={{ backgroundColor: resourceColors[resource] }}
-                    />
-                    <span className="text-sm text-gray-700">{resource}</span>
-                  </div>
-                ))}
+    <div className="h-screen bg-slate-50 relative overflow-hidden">
+      {/* Top Header Bar */}
+      <div className="absolute top-0 left-0 right-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
+        <div className="flex items-center justify-between px-6 py-3">
+          <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2">
+              <div className="p-1.5 bg-slate-900 rounded-lg">
+                <Pickaxe className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold text-slate-900">Global Mining Resources</h1>
+                <p className="text-xs text-slate-500">{filteredData.length} deposits worldwide</p>
               </div>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Main Content */}
-      <div className="flex-1 relative">
-        {/* Map Area */}
+          <div className="flex items-center space-x-3">
+            {/* Compact Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="Search deposits..."
+                value={searchTerm}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+                className="pl-9 w-64 h-9 bg-white/50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-slate-400"
+              />
+            </div>
+
+            {/* Filter Toggle */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+              className={`h-9 px-3 ${showFilters ? 'bg-slate-100' : 'bg-white/50'} border-slate-200 text-slate-700 hover:bg-slate-100`}
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Filter
+              <ChevronDown className={`h-4 w-4 ml-2 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+            </Button>
+
+            {/* Add Deposit Button */}
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-slate-900 hover:bg-slate-800 text-white h-9 px-4 shadow-sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Deposit
+                </Button>
+              </DialogTrigger>
+            </Dialog>
+          </div>
+        </div>
+
+        {/* Collapsible Filters */}
+        {showFilters && (
+          <div className="px-6 pb-3 border-t border-slate-200/50">
+            <div className="flex items-center space-x-4 pt-3">
+              <div className="flex items-center space-x-2">
+                <Label className="text-sm font-medium text-slate-700">Resource:</Label>
+                <Select value={resourceFilter} onValueChange={setResourceFilter}>
+                  <SelectTrigger className="w-40 h-8 bg-white border-slate-200 text-slate-900">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Resources</SelectItem>
+                    {uniqueResources.map(resource => (
+                      <SelectItem key={resource} value={resource}>
+                        <div className="flex items-center">
+                          <div 
+                            className="w-3 h-3 rounded-full mr-2 border border-slate-300"
+                            style={{ backgroundColor: resourceColors[resource] || '#666' }}
+                          />
+                          {resource}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Resource Legend */}
+              <div className="flex items-center space-x-4 ml-8">
+                <Label className="text-sm font-medium text-slate-700">Legend:</Label>
+                <div className="flex flex-wrap gap-3">
+                  {uniqueResources.slice(0, 6).map(resource => (
+                    <div key={resource} className="flex items-center space-x-1">
+                      <div 
+                        className="w-3 h-3 rounded-full border border-slate-300"
+                        style={{ backgroundColor: resourceColors[resource] || '#666' }}
+                      />
+                      <span className="text-xs text-slate-600">{resource}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Main Map Container */}
+      <div className="absolute inset-0 pt-16">
         <div className="h-full w-full">
           <MapComponent 
             deposits={filteredData}
@@ -343,217 +424,314 @@ const MiningResourcesMap = () => {
             onDepositSelect={handleDepositSelect}
           />
         </div>
-
-        {/* Selected Deposit Panel */}
-        {selectedDeposit && (
-          <div className="absolute top-4 left-4 w-80 bg-white rounded-lg border border-gray-200 shadow-lg z-20">
-            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900">Deposit Details</h3>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => openEditDialog(selectedDeposit)}
-                  className="p-1 hover:bg-gray-100 rounded"
-                >
-                  <Edit className="w-4 h-4 text-gray-600" />
-                </button>
-                <button
-                  onClick={() => handleDeleteDeposit(selectedDeposit.id)}
-                  className="p-1 hover:bg-gray-100 rounded"
-                >
-                  <Trash2 className="w-4 h-4 text-red-600" />
-                </button>
-                <button
-                  onClick={() => setSelectedDeposit(null)}
-                  className="p-1 hover:bg-gray-100 rounded"
-                >
-                  <X className="w-4 h-4 text-gray-600" />
-                </button>
-              </div>
-            </div>
-            
-            <div className="p-4 space-y-3">
-              <div>
-                <h4 className="font-semibold text-gray-900">{selectedDeposit.projectName}</h4>
-                <p className="text-sm text-gray-600">{selectedDeposit.companyName}</p>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <div 
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: resourceColors[selectedDeposit.resource] }}
-                />
-                <span className="text-sm font-medium">{selectedDeposit.resource}</span>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  selectedDeposit.status === 'Active' 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-gray-100 text-gray-800'
-                }`}>
-                  {selectedDeposit.status}
-                </span>
-              </div>
-              
-              <div className="text-sm text-gray-600">
-                <div className="flex items-center space-x-1">
-                  <MapPin className="w-3 h-3" />
-                  <span>{selectedDeposit.country}</span>
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  {selectedDeposit.latitude.toFixed(4)}, {selectedDeposit.longitude.toFixed(4)}
-                </p>
-              </div>
-              
-              {selectedDeposit.description && (
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  {selectedDeposit.description}
-                </p>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Add/Edit Form Modal */}
-      {(showAddForm || editingDeposit) && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">
-                {editingDeposit ? 'Edit Deposit' : 'Add New Deposit'}
-              </h3>
-              <button
-                onClick={() => {
-                  setShowAddForm(false);
-                  setEditingDeposit(null);
-                  resetForm();
-                }}
-                className="p-1 hover:bg-gray-100 rounded"
-              >
-                <X className="w-5 h-5 text-gray-600" />
-              </button>
-            </div>
-            
-            <div className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Company Name*</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.companyName}
-                    onChange={(e) => setFormData({...formData, companyName: e.target.value})}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+      {/* Floating Deposit Details Panel */}
+      {selectedDeposit && (
+        <div className="absolute bottom-6 right-6 z-20 w-96">
+          <Card className="bg-white/95 backdrop-blur-sm border border-slate-200 shadow-xl">
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between">
+                <div className="flex-1 min-w-0">
+                  <CardTitle className="text-lg text-slate-900 truncate">
+                    {selectedDeposit.projectName}
+                  </CardTitle>
+                  <CardDescription className="text-sm text-slate-600 mt-1">
+                    {selectedDeposit.companyName}
+                  </CardDescription>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Project Name*</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.projectName}
-                    onChange={(e) => setFormData({...formData, projectName: e.target.value})}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Resource*</label>
-                  <select
-                    required
-                    value={formData.resource}
-                    onChange={(e) => setFormData({...formData, resource: e.target.value})}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                <div className="flex items-center space-x-2 ml-4">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => openEditDialog(selectedDeposit)}
+                    className="h-8 w-8 p-0 text-slate-500 hover:text-slate-700 hover:bg-slate-100"
                   >
-                    <option value="">Select resource</option>
-                    {Object.keys(resourceColors).map(resource => (
-                      <option key={resource} value={resource}>{resource}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({...formData, status: e.target.value})}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    <Edit3 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteDeposit(selectedDeposit.id)}
+                    className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
                   >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                    <option value="Exploration">Exploration</option>
-                  </select>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedDeposit(null)}
+                    className="h-8 w-8 p-0 text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
-              
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Latitude*</label>
-                  <input
-                    type="number"
-                    step="any"
-                    required
-                    value={formData.latitude}
-                    onChange={(e) => setFormData({...formData, latitude: e.target.value})}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2">
+                  <div 
+                    className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
+                    style={{ backgroundColor: resourceColors[selectedDeposit.resource] || '#666' }}
                   />
+                  <span className="text-sm font-medium text-slate-900">{selectedDeposit.resource}</span>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Longitude*</label>
-                  <input
-                    type="number"
-                    step="any"
-                    required
-                    value={formData.longitude}
-                    onChange={(e) => setFormData({...formData, longitude: e.target.value})}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Country*</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.country}
-                    onChange={(e) => setFormData({...formData, country: e.target.value})}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea
-                  rows={3}
-                  value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                />
-              </div>
-              
-              <div className="flex justify-end space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAddForm(false);
-                    setEditingDeposit(null);
-                    resetForm();
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                <Badge 
+                  variant={selectedDeposit.status === 'Active' ? 'default' : 'secondary'}
+                  className="text-xs bg-slate-100 text-slate-700 border border-slate-200"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={editingDeposit ? handleEditDeposit : handleAddDeposit}
-                  className="px-4 py-2 text-sm font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition-colors"
-                >
-                  {editingDeposit ? 'Update Deposit' : 'Add Deposit'}
-                </button>
+                  {selectedDeposit.status}
+                </Badge>
               </div>
-            </div>
-          </div>
+              
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Location</Label>
+                  <p className="text-slate-900 mt-1">{selectedDeposit.country}</p>
+                </div>
+                <div>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Coordinates</Label>
+                  <p className="text-slate-900 mt-1 font-mono text-xs">
+                    {selectedDeposit.latitude.toFixed(4)}, {selectedDeposit.longitude.toFixed(4)}
+                  </p>
+                </div>
+              </div>
+
+              {selectedDeposit.description && (
+                <div>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Description</Label>
+                  <p className="text-sm text-slate-700 mt-1 leading-relaxed">{selectedDeposit.description}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       )}
+
+      {/* Add Deposit Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="max-w-md bg-white border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="pb-4">
+            <DialogTitle className="text-slate-900 text-lg">Add New Mining Deposit</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleAddDeposit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <Label htmlFor="company" className="text-slate-700 font-medium text-sm">Company Name*</Label>
+                <Input
+                  id="company"
+                  required
+                  value={formData.companyName}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, companyName: e.target.value})}
+                  className="mt-1 bg-white border-slate-300 text-slate-900 focus:border-slate-500 h-9"
+                />
+              </div>
+              <div className="col-span-2">
+                <Label htmlFor="project" className="text-slate-700 font-medium text-sm">Project Name*</Label>
+                <Input
+                  id="project"
+                  required
+                  value={formData.projectName}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, projectName: e.target.value})}
+                  className="mt-1 bg-white border-slate-300 text-slate-900 focus:border-slate-500 h-9"
+                />
+              </div>
+              <div>
+                <Label htmlFor="resource" className="text-slate-700 font-medium text-sm">Resource*</Label>
+                <Select value={formData.resource} onValueChange={(value: string) => setFormData({...formData, resource: value})}>
+                  <SelectTrigger className="mt-1 bg-white border-slate-300 text-slate-900 focus:border-slate-500 h-9">
+                    <SelectValue placeholder="Select resource" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.keys(resourceColors).map(resource => (
+                      <SelectItem key={resource} value={resource}>{resource}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="status" className="text-slate-700 font-medium text-sm">Status</Label>
+                <Select value={formData.status} onValueChange={(value: string) => setFormData({...formData, status: value})}>
+                  <SelectTrigger className="mt-1 bg-white border-slate-300 text-slate-900 focus:border-slate-500 h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="Inactive">Inactive</SelectItem>
+                    <SelectItem value="Exploration">Exploration</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="latitude" className="text-slate-700 font-medium text-sm">Latitude*</Label>
+                <Input
+                  id="latitude"
+                  type="number"
+                  step="any"
+                  required
+                  placeholder="e.g., 40.2731"
+                  value={formData.latitude}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, latitude: e.target.value})}
+                  className="mt-1 bg-white border-slate-300 text-slate-900 focus:border-slate-500 h-9"
+                />
+              </div>
+              <div>
+                <Label htmlFor="longitude" className="text-slate-700 font-medium text-sm">Longitude*</Label>
+                <Input
+                  id="longitude"
+                  type="number"
+                  step="any"
+                  required
+                  placeholder="e.g., -116.6374"
+                  value={formData.longitude}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, longitude: e.target.value})}
+                  className="mt-1 bg-white border-slate-300 text-slate-900 focus:border-slate-500 h-9"
+                />
+              </div>
+              <div className="col-span-2">
+                <Label htmlFor="country" className="text-slate-700 font-medium text-sm">Country*</Label>
+                <Input
+                  id="country"
+                  required
+                  value={formData.country}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, country: e.target.value})}
+                  className="mt-1 bg-white border-slate-300 text-slate-900 focus:border-slate-500 h-9"
+                />
+              </div>
+              <div className="col-span-2">
+                <Label htmlFor="description" className="text-slate-700 font-medium text-sm">Description</Label>
+                <Textarea
+                  id="description"
+                  rows={3}
+                  value={formData.description}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({...formData, description: e.target.value})}
+                  className="mt-1 bg-white border-slate-300 text-slate-900 focus:border-slate-500"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end space-x-3 pt-4">
+              <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)} className="border-slate-300 text-slate-700 hover:bg-slate-50 h-9">
+                Cancel
+              </Button>
+              <Button type="submit" className="bg-slate-900 hover:bg-slate-800 text-white h-9">
+                Add Deposit
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Deposit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-md bg-white border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="pb-4">
+            <DialogTitle className="text-slate-900 text-lg">Edit Mining Deposit</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditDeposit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <Label htmlFor="edit-company" className="text-slate-700 font-medium text-sm">Company Name*</Label>
+                <Input
+                  id="edit-company"
+                  required
+                  value={formData.companyName}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, companyName: e.target.value})}
+                  className="mt-1 bg-white border-slate-300 text-slate-900 focus:border-slate-500 h-9"
+                />
+              </div>
+              <div className="col-span-2">
+                <Label htmlFor="edit-project" className="text-slate-700 font-medium text-sm">Project Name*</Label>
+                <Input
+                  id="edit-project"
+                  required
+                  value={formData.projectName}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, projectName: e.target.value})}
+                  className="mt-1 bg-white border-slate-300 text-slate-900 focus:border-slate-500 h-9"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-resource" className="text-slate-700 font-medium text-sm">Resource*</Label>
+                <Select value={formData.resource} onValueChange={(value: string) => setFormData({...formData, resource: value})}>
+                  <SelectTrigger className="mt-1 bg-white border-slate-300 text-slate-900 focus:border-slate-500 h-9">
+                    <SelectValue placeholder="Select resource" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.keys(resourceColors).map(resource => (
+                      <SelectItem key={resource} value={resource}>{resource}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="edit-status" className="text-slate-700 font-medium text-sm">Status</Label>
+                <Select value={formData.status} onValueChange={(value: string) => setFormData({...formData, status: value})}>
+                  <SelectTrigger className="mt-1 bg-white border-slate-300 text-slate-900 focus:border-slate-500 h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="Inactive">Inactive</SelectItem>
+                    <SelectItem value="Exploration">Exploration</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="edit-latitude" className="text-slate-700 font-medium text-sm">Latitude*</Label>
+                <Input
+                  id="edit-latitude"
+                  type="number"
+                  step="any"
+                  required
+                  value={formData.latitude}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, latitude: e.target.value})}
+                  className="mt-1 bg-white border-slate-300 text-slate-900 focus:border-slate-500 h-9"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-longitude" className="text-slate-700 font-medium text-sm">Longitude*</Label>
+                <Input
+                  id="edit-longitude"
+                  type="number"
+                  step="any"
+                  required
+                  value={formData.longitude}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, longitude: e.target.value})}
+                  className="mt-1 bg-white border-slate-300 text-slate-900 focus:border-slate-500 h-9"
+                />
+              </div>
+              <div className="col-span-2">
+                <Label htmlFor="edit-country" className="text-slate-700 font-medium text-sm">Country*</Label>
+                <Input
+                  id="edit-country"
+                  required
+                  value={formData.country}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, country: e.target.value})}
+                  className="mt-1 bg-white border-slate-300 text-slate-900 focus:border-slate-500 h-9"
+                />
+              </div>
+              <div className="col-span-2">
+                <Label htmlFor="edit-description" className="text-slate-700 font-medium text-sm">Description</Label>
+                <Textarea
+                  id="edit-description"
+                  rows={3}
+                  value={formData.description}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({...formData, description: e.target.value})}
+                  className="mt-1 bg-white border-slate-300 text-slate-900 focus:border-slate-500"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end space-x-3 pt-4">
+              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)} className="border-slate-300 text-slate-700 hover:bg-slate-50 h-9">
+                Cancel
+              </Button>
+              <Button type="submit" className="bg-slate-900 hover:bg-slate-800 text-white h-9">
+                Update Deposit
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
