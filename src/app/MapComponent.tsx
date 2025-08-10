@@ -183,7 +183,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ deposits, selectedDeposit, 
   }, [selectedDeposit, deposits]);
 
   return (
-    <div className="relative w-full h-96 overflow-hidden border border-gray-200">
+    <div className="relative w-full h-full overflow-hidden border border-gray-200">
       <div 
         ref={mapRef} 
         className="w-full h-full"
