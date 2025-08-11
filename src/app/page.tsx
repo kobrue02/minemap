@@ -23,6 +23,11 @@ const MapComponent = dynamic(() => import('./MapComponent'), {
 });
 
 // Types
+interface Company {
+  id: number;
+  name: string;
+}
+
 interface MiningDeposit {
   id: number;
   companyName: string;
@@ -129,6 +134,7 @@ const resourceColors: Record<string, string> = {
 };
 
 const MiningResourcesMap = () => {
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [miningData, setMiningData] = useState<MiningDeposit[]>(initialMiningData);
   const [filteredData, setFilteredData] = useState<MiningDeposit[]>(initialMiningData);
   const [selectedDeposit, setSelectedDeposit] = useState<MiningDeposit | null>(null);
@@ -169,6 +175,27 @@ const MiningResourcesMap = () => {
 
     fetchDeposits();
   }, []);
+
+// Load companies
+useEffect(() => {
+  const fetchCompanies = async () => {
+    try {
+      const response = await fetch('api/companies');
+      if (response.ok) {
+        const data = await response.json();
+        setCompanies(data);
+      } else {
+        console.error('Failed to fetch companies');
+      }
+      } catch (error) {
+        console.error('Error fetching companies:', error);
+      }
+    };
+  
+    fetchCompanies();
+}, []);
+
+
 
   // Filter data based on search and resource filter
   useEffect(() => {
@@ -516,16 +543,19 @@ const MiningResourcesMap = () => {
             <DialogTitle className="text-slate-900 text-lg">Add New Mining Deposit</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleAddDeposit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
                 <Label htmlFor="company" className="text-slate-700 font-medium text-sm">Company Name*</Label>
-                <Input
-                  id="company"
-                  required
-                  value={formData.companyName}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, companyName: e.target.value})}
-                  className="mt-1 bg-white border-slate-300 text-slate-900 focus:border-slate-500 h-9"
-                />
+                <Select value={formData.companyName} onValueChange={(value: string) => setFormData({...formData, companyName: value})}>
+                  <SelectTrigger className="mt-1 bg-white border-slate-300 text-slate-900 focus:border-slate-500 h-9">
+                    <SelectValue placeholder="Select company" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border-slate-200 z-[1010]">
+                    {companies.map(company => (
+                      <SelectItem key={company.id} value={company.name}>{company.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="col-span-2">
                 <Label htmlFor="project" className="text-slate-700 font-medium text-sm">Project Name*</Label>
